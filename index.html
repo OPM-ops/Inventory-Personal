@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e40af">
+    <title>Inventario OPM - One Play More</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- HEADER -->
+        <header>
+            <div class="header-content">
+                <div class="logo-container" onclick="showView('dashboard')">
+                    <img id="headerLogo" src="" alt="Logo OPM" style="display:none;">
+                    <h1 id="headerTitle">📦 One Play More</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-danger" onclick="emergencyDelete()">🚨 Reset</button>
+                    <button onclick="toggleTheme()">🌓 Modo</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- NAVEGACIÓN -->
+        <nav id="mainNav">
+            <button onclick="showView('dashboard')">📊 Dashboard</button>
+            <button onclick="showView('inventory')">📦 Inventario</button>
+            <button onclick="showView('sales')">💰 Ventas</button>
+            <button onclick="showView('salesHistory')">📋 Historial Ventas</button>
+            <button onclick="showView('purchases')">🛒 Compras</button>
+            <button onclick="showView('accounts')">🏦 Cuentas</button>
+            <button onclick="showView('transfers')">🔄 Transferencias</button>
+            <button onclick="showView('loans')">💸 Préstamos</button>
+            <button onclick="showView('presales')">📋 Preventas</button>
+            <button onclick="showView('reservations')">🎯 Apartados</button>
+            <button onclick="showView('reports')">📈 Reportes</button>
+            <button onclick="showView('settings')">⚙️ Configuración</button>
+        </nav>
+
+        <!-- CONTENIDO -->
+        <main>
+            <!-- DASHBOARD MEJORADO -->
+            <div id="dashboard" class="view-section active">
+                <h2>📊 Dashboard General</h2>
+                
+                <!-- SECCIÓN: RESUMEN FINANCIERO -->
+                <div class="dashboard-section">
+                    <h3>💰 Resumen Financiero</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Balance Total</h3>
+                            <p id="totalBalance">$0 COP</p>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, var(--warning) 0%, #b45309 100%);">
+                            <h3>💸 Total Invertido</h3>
+                            <p id="totalInvested" style="color:white;">$0 COP</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>📈 Ingresos Mes</h3>
+                            <p id="monthlyRevenue">$0 COP</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>💸 Beneficio Neto</h3>
+                            <p id="netProfit">$0 COP</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SECCIÓN: INVENTARIO Y PROYECCIONES -->
+                <div class="dashboard-section">
+                    <h3>📦 Estado de Inventario</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>📦 Ganancia Prevista</h3>
+                            <p id="projectedProfit">$0 COP</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>⚠️ Stock Bajo</h3>
+                            <p id="lowStockCount">0</p>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                            <h3 style="color:white;">📊 Productos Activos</h3>
+                            <p id="activeProducts" style="color:white;">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SECCIÓN: GRÁFICAS -->
+                <div class="dashboard-section">
+                    <h3>📊 Análisis de Datos</h3>
+                    <div class="charts-container">
+                        <div class="chart-box">
+                            <h4>Productos Más Vendidos</h4>
+                            <canvas id="topProductsChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4>Ingresos del Mes</h4>
+                            <canvas id="monthlyRevenueChart"></canvas>
+                        </div>
+                        <div class="chart-box">
+                            <h4>Distribución por Categoría</h4>
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INVENTARIO -->
+            <div id="inventory" class="view-section">
+                <h2>📦 Gestión de Inventario</h2>
+                <div class="actions-bar">
+                    <button onclick="exportInventory()" class="btn-warning">📤 Exportar Inventario Filtrado</button>
+                    <button onclick="openProductModal()" class="btn-primary">➕ Nuevo Producto</button>
+                    
+                    <!-- ✅ TOGGLE OCULTAR SIN STOCK -->
+                    <label class="checkbox-label" style="margin-left:auto;">
+                        <input type="checkbox" id="hideOutOfStockToggle" onchange="filterInventory()" checked>
+                        Ocultar productos sin stock
+                    </label>
+                    
+                    <select id="inventoryLanguageFilter" onchange="filterInventory()">
+                        <option value="">Todos los idiomas</option>
+                    </select>
+                    <select id="inventoryCategoryFilter" onchange="filterInventory()">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                    <select id="productFilter" onchange="filterInventory()">
+                        <option value="">Todos los tipos</option>
+                    </select>
+                </div>
+                <div id="productList" class="data-list"></div>
+                <div id="productDetailsModal" class="modal-details" style="display:none;">
+                    <div class="modal-content">
+                        <span class="close" onclick="closeDetailsModal()">&times;</span>
+                        <h3>Detalles del Producto</h3>
+                        <div id="productDetailsContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VENTAS -->
+            <div id="sales" class="view-section">
+                <h2>💰 Punto de Venta</h2>
+                <div class="sales-filters">
+                    <input type="text" id="searchProductSale" placeholder="🔍 Buscar producto..." onkeyup="filterSalesProducts()">
+                    <select id="salesLanguageFilter" onchange="filterSalesProducts()">
+                        <option value="">Todos los idiomas</option>
+                    </select>
+                    <select id="salesCategoryFilter" onchange="filterSalesProducts()">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                    <select id="salesTypeFilter" onchange="filterSalesProducts()">
+                        <option value="">Todos los tipos</option>
+                    </select>
+                </div>
+                
+                <div class="sales-grid" id="salesProductsGrid"></div>
+                
+                <div id="cart" class="cart-section" style="display:none;">
+                    <h3>🛒 Carrito de Compras <span id="cartCount">(0)</span></h3>
+                    <div id="cartItems"></div>
+                    <div class="cart-total">
+                        <p>Subtotal: <span id="cartSubtotal">$0</span></p>
+                        <p>
+                        Descuento: 
+                        <input type="number" id="discountInput" value="0" min="0" max="100" style="width:60px" oninput="updateCartTotals()">%
+                        o $<input type="number" id="discountFixedInput" value="0" min="0" step="0.01" style="width:100px" oninput="updateCartTotals()">
+                        </p>
+                        <p><strong>Total: <span id="cartTotal">$0</span></strong></p>
+                        <button onclick="processSale()" class="btn-success">✅ Finalizar Venta</button>
+                        <button onclick="clearCart()" class="btn-danger">🗑️ Vaciar Carrito</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORIAL DE VENTA -->
+            <div id="salesHistory" class="view-section">
+                <h2>📋 Historial de Ventas</h2>
+                <div class="actions-bar">
+                    <input type="date" id="salesHistoryDateFilter" onchange="filterSalesHistory()">
+                    <select id="salesHistoryAccountFilter" onchange="filterSalesHistory()">
+                        <option value="">Todas las cuentas</option>
+                    </select>
+                    <button onclick="exportSalesHistory()" class="btn-warning">📤 Exportar Historial</button>
+                </div>
+                <div id="salesHistoryList" class="data-list"></div>
+            </div>
+
+            <!-- COMPRAS -->
+            <div id="purchases" class="view-section">
+                <h2>🛒 Gestión de Compras y Gastos</h2>
+                <div class="actions-bar">
+                    <button onclick="openPurchaseModal('product')" class="btn-primary">➕ Comprar Producto</button>
+                    <button onclick="openPurchaseModal('stock')" class="btn-success">📦 Reabastecer Stock</button>
+                    <button onclick="openExpenseModal()" class="btn-warning">💸 Registrar Gasto</button>
+                </div>
+                <div id="purchasesList" class="data-list"></div>
+            </div>
+
+            <!-- CUENTAS -->
+            <div id="accounts" class="view-section">
+                <h2>🏦 Cuentas y Balances</h2>
+                <button type="button" onclick="openOccasionalIncomeModal()" class="btn-success">➕ Ingreso Ocasional</button>
+                <div id="accountsGrid" class="stats-grid"></div>
+                <div id="accountMovements"></div>
+            </div>
+
+            <!-- TRANSFERENCIAS -->
+            <div id="transfers" class="view-section">
+                <h2>🔄 Transferencias entre Cuentas</h2>
+                <button onclick="openTransferModal()" class="btn-primary">➕ Nueva Transferencia</button>
+                <div id="transfersList" class="data-list"></div>
+            </div>
+
+            <!-- PRÉSTAMOS -->
+            <div id="loans" class="view-section">
+                <h2>💸 Gestión de Préstamos</h2>
+                <button onclick="openLoanModal()" class="btn-primary">➕ Nuevo Préstamo</button>
+                <div id="loansList" class="data-list"></div>
+            </div>
+
+            <!-- PREVENTAS -->
+            <div id="presales" class="view-section">
+                <h2>📋 Preventas</h2>
+                <button onclick="openPresaleModal()" class="btn-primary">➕ Nueva Preventa</button>
+                <div id="presalesList" class="data-list"></div>
+            </div>
+
+            <!-- APARTADOS -->
+            <div id="reservations" class="view-section">
+                <h2>🎯 Apartados de Clientes</h2>
+                <button onclick="openReservationModal()" class="btn-primary">➕ Nuevo Apartado</button>
+                <div id="reservationsList" class="data-list"></div>
+            </div>
+
+            <!-- REPORTES -->
+<div id="reports" class="view-section">
+    <h2>📈 Reportes y Análisis</h2>
+    <div class="actions-bar">
+        <select id="reportMonth" onchange="updateReportMonth()">
+            <option value="">Mes actual</option>
+            <option value="0">Enero</option>
+            <option value="1">Febrero</option>
+            <option value="2">Marzo</option>
+            <option value="3">Abril</option>
+            <option value="4">Mayo</option>
+            <option value="5">Junio</option>
+            <option value="6">Julio</option>
+            <option value="7">Agosto</option>
+            <option value="8">Septiembre</option>
+            <option value="9">Octubre</option>
+            <option value="10">Noviembre</option>
+            <option value="11">Diciembre</option>
+        </select>
+        <select id="reportYear" style="width:120px;padding:12px;">
+            <!-- Se llenará dinámicamente -->
+        </select>
+        <button onclick="exportReport('pdf')" class="btn-warning">📄 Generar Reporte PDF</button>
+        <button onclick="createBackup()" class="btn-primary">💾 Backup</button>
+    </div>
+    <div id="reportContent"></div>
+</div>
+
+            <!-- CONFIGURACIÓN -->
+            <div id="settings" class="view-section">
+                <h2>⚙️ Configuración del Sistema</h2>
+                
+                <div class="settings-group">
+                    <h3>🖼️ Logo de la Empresa</h3>
+                    <input type="file" id="logoUpload" accept="image/*" onchange="uploadLogo(event)">
+                    <div id="logoPreview"></div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>🌐 Idiomas Disponibles</h3>
+                    <div id="languagesList"></div>
+                    <input type="text" id="newLanguage" placeholder="Código idioma (ej: FR)">
+                    <button onclick="addLanguage()">➕ Agregar Idioma</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>🏷️ Categorías</h3>
+                    <div id="categoriesList"></div>
+                    <input type="text" id="newCategory" placeholder="Nueva categoría">
+                    <button onclick="addCategory()">➕ Agregar</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>📋 Tipos de Producto</h3>
+                    <div id="productTypesList"></div>
+                    <input type="text" id="newProductType" placeholder="Nuevo tipo">
+                    <button onclick="addProductType()">➕ Agregar</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>💰 IVA (%)</h3>
+                    <input type="number" id="ivaSetting" value="19" min="0" max="100" style="width:100px">
+                    <button onclick="saveIVA()" class="btn-primary">💾 Guardar</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>🏦 Cuentas de Pago</h3>
+                    <div id="accountsSettingsList"></div>
+                    <input type="text" id="newAccount" placeholder="Nueva cuenta">
+                    <button onclick="addAccount()">➕ Agregar</button>
+                </div>
+
+                <div class="settings-group">
+                    <h3>💾 Backup y Restauración</h3>
+                    <button onclick="createBackup()" class="btn-primary" style="margin-right:10px;">💾 Crear Backup</button>
+                    <label for="restoreBackup" class="btn-warning" style="cursor:pointer;padding:10px 20px;border-radius:8px;">
+                        📤 Restaurar Backup
+                    </label>
+                    <input type="file" id="restoreBackup" accept=".json" onchange="restoreBackup(event)" style="display:none;">
+                    <p style="font-size:12px;color:#999;margin-top:10px;">
+                        ⚠️ Restaurar backup reemplazará TODOS los datos actuales. Usa con precaución.
+                    </p>
+                </div>
+
+            </div>
+
+<!-- MODAL INGRESO OCASIONAL -->
+<div id="occasionalIncomeModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('occasionalIncomeModal')">&times;</span>
+        <h3>💰 Agregar Dinero</h3>
+        <form id="occasionalIncomeForm">
+            <input type="number" id="occasionalAmount" placeholder="Monto (COP)" min="0" step="0.01" required>
+            <input type="text" id="occasionalConcept" placeholder="¿De dónde viene este dinero?" required>
+            <select id="occasionalAccount" required>
+                <option value="">-- Seleccionar Cuenta --</option>
+            </select>
+            <textarea id="occasionalNotes" placeholder="Notas adicionales..."></textarea>
+            <button type="submit" class="btn-success">✅ Registrar Ingreso</button>
+        </form>
+    </div>
+</div>
+
+
+        </main>
+    </div>
+
+    <!-- MODAL PRODUCTO -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('productModal')">&times;</span>
+            <h3 id="productModalTitle">Nuevo Producto</h3>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <input type="text" id="productSKU" placeholder="SKU (autogenerado)" readonly>
+                <input type="text" id="productName" placeholder="Nombre del producto" required>
+                <textarea id="productDescription" placeholder="Descripción del producto"></textarea>
+                
+                <select id="productLanguage" required>
+                    <option value="">-- Seleccionar Idioma --</option>
+                </select>
+                
+                <select id="productCategory" required></select>
+                <select id="productType" required></select>
+                
+                <input type="number" id="productStock" placeholder="Stock disponible" min="0" required>
+                <input type="number" id="productCost" placeholder="Costo (COP)" min="0" step="0.01" required oninput="calculatePriceWithIVA()">
+                <input type="number" id="productPrice" placeholder="Precio venta (COP)" min="0" step="0.01" required>
+                <input type="text" id="productSupplier" placeholder="Proveedor">
+                <input type="text" id="productTags" placeholder="Etiquetas (separadas por coma)">
+                
+                <label class="checkbox-label">
+                    <input type="checkbox" id="productIVA" onchange="calculatePriceWithIVA()"> Aplica IVA (19%)
+                </label>
+
+                <div class="form-section">
+                    <h4>📷 Imágenes (URL o Subir)</h4>
+                    <input type="text" id="productImageURL" placeholder="URL de imagen">
+                    <button type="button" onclick="addImageFromURL()" class="btn-success">➕ URL</button>
+                    <button type="button" onclick="addProductImage()" class="btn-secondary">📁 Subir</button>
+                    <div id="productImages"></div>
+                </div>
+
+                <button type="submit" class="btn-primary">💾 Guardar Producto</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL COMPRA -->
+    <div id="purchaseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('purchaseModal')">&times;</span>
+            <h3 id="purchaseModalTitle">Comprar Producto</h3>
+            <form id="purchaseForm">
+                <input type="hidden" id="purchaseType">
+                <div id="purchaseProductSelect"></div>
+                <input type="number" id="purchaseQuantity" placeholder="Cantidad" min="1" required>
+                <input type="number" id="purchaseUnitCost" placeholder="Costo unitario (COP)" min="0" step="0.01" required>
+                
+                <label class="checkbox-label">
+                    <input type="checkbox" id="purchaseIVA" checked> Aplica IVA (19%)
+                </label>
+                
+                <input type="number" id="salePriceManual" placeholder="Valor de venta (opcional)" min="0" step="0.01">
+                
+                <input type="text" id="purchaseSupplier" placeholder="Proveedor">
+<!-- Imágenes durante la compra -->
+<div class="form-section">
+  <h4>📷 Imágenes (opcional)</h4>
+  <input type="text" id="purchaseImageURL" placeholder="URL de imagen">
+  <button type="button" onclick="addPurchaseImageFromURL()" class="btn-success">➕ URL</button>
+  <button type="button" onclick="addPurchaseImageFile()" class="btn-secondary">📁 Subir</button>
+  <div id="purchaseImages"></div>
+</div>
+                <textarea id="purchaseNotes" placeholder="Notas de la compra..."></textarea>
+                <select id="purchaseAccount" required></select>
+                <button type="submit" class="btn-primary">✅ Registrar Compra</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL GASTO -->
+    <div id="expenseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('expenseModal')">&times;</span>
+            <h3>Registrar Gasto Operativo</h3>
+            <form id="expenseForm">
+                <input type="text" id="expenseConcept" placeholder="Concepto (ej: Transporte, Embalaje)" required>
+                <input type="number" id="expenseAmount" placeholder="Monto (COP)" min="0" step="0.01" required>
+                <select id="expenseCategory" required>
+                    <option value="">-- Categoría de Gasto --</option>
+                    <option value="transporte">Transporte</option>
+                    <option value="embalaje">Embalaje</option>
+                    <option value="materiales">Materiales</option>
+                    <option value="servicios">Servicios</option>
+                    <option value="otros">Otros</option>
+                </select>
+                <select id="expenseAccount" required></select>
+                <textarea id="expenseNotes" placeholder="Notas..."></textarea>
+                <button type="submit" class="btn-warning">✅ Registrar Gasto</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL TRANSFERENCIA -->
+    <div id="transferModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('transferModal')">&times;</span>
+            <h3>🔄 Nueva Transferencia</h3>
+            <form id="transferForm">
+                <select id="transferFromAccount" required>
+                    <option value="">-- De la cuenta --</option>
+                </select>
+                <select id="transferToAccount" required>
+                    <option value="">-- A la cuenta --</option>
+                </select>
+                <input type="number" id="transferAmount" placeholder="Monto (COP)" min="0" step="0.01" required>
+                <textarea id="transferNotes" placeholder="Notas..."></textarea>
+                <button type="submit" class="btn-primary">✅ Transferir</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PRÉSTAMO -->
+    <div id="loanModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loanModal')">&times;</span>
+            <h3>Registrar Préstamo</h3>
+            <form id="loanForm">
+                <input type="hidden" id="loanId">
+                <select id="loanType" required>
+                    <option value="">-- Tipo --</option>
+                    <option value="presto">Presto a alguien</option>
+                    <option value="prestan">Me prestan</option>
+                    <option value="app">Le presto a la app</option>
+                </select>
+                <input type="text" id="loanPerson" placeholder="Nombre" required>
+                <input type="number" id="loanAmount" placeholder="Monto (COP)" min="0" step="0.01" required>
+                <select id="loanAccount" required></select>
+                <textarea id="loanNotes" placeholder="Notas..."></textarea>
+<div id="loanPaymentsInfo"></div> <!-- ✅ NUEVO: Para mostrar historial de pagos -->
+                <button type="submit" class="btn-primary">✅ Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PREVENTA -->
+    <div id="presaleModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('presaleModal')">&times;</span>
+            <h3>Nueva Preventa</h3>
+            <form id="presaleForm">
+                <input type="text" id="presaleClient" placeholder="Cliente" required>
+                <select id="presaleProductSelect">
+                    <option value="">-- Seleccionar Producto del Inventario --</option>
+                </select>
+                <input type="text" id="presaleProductCustom" placeholder="O escribe producto manualmente">
+                <input type="number" id="presaleTotal" placeholder="Precio total" min="0" step="0.01" required>
+                <input type="number" id="presaleDeposit" placeholder="Abono" min="0" step="0.01" required>
+                <select id="presaleAccount" required>
+                    <option value="">-- Seleccionar Cuenta --</option>
+                </select>
+                <input type="date" id="presaleDeliveryDate" required>
+                <select id="presaleStatus">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en_transito">En Tránsito</option>
+                    <option value="entregada">Entregada</option>
+                </select>
+                <button type="submit" class="btn-primary">✅ Crear</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL APARTADO -->
+    <div id="reservationModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('reservationModal')">&times;</span>
+            <h3>🎯 Nuevo Apartado</h3>
+            <form id="reservationForm">
+                <input type="text" id="reservationClient" placeholder="Nombre del cliente" required>
+<div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);padding:10px;border-radius:8px;">
+  <p style="margin:0 0 10px;font-weight:bold;">Selecciona los productos a apartar:</p>
+  <div id="multiProductList"></div>
+</div>
+
+                <input type="number" id="reservationQuantity" placeholder="Cantidad a apartar" min="1" required>
+                <input type="number" id="reservationDuration" placeholder="Días de apartado" min="1" value="7">
+                <textarea id="reservationNotes" placeholder="Notas del apartado..."></textarea>
+                <button type="submit" class="btn-success">✅ Apartar Producto</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PAGO -->
+<div id="paymentModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('paymentModal')">&times;</span>
+        <h3>💰 Finalizar Venta</h3>
+        <form id="paymentForm">
+            <p><strong>Total a pagar: <span id="modalTotalAmount" style="color:var(--success);font-size:28px;"></span></strong></p>
+            <p>Selecciona cuenta de pago:</p>
+            <select id="modalPaymentAccount" required style="width:100%;padding:12px;margin:15px 0;">
+                <option value="">-- Seleccionar Cuenta --</option>
+            </select>
+            
+            <!-- ✅ NUEVO: Checkbox para fecha personalizada -->
+            <label class="checkbox-label" style="margin: 15px 0;">
+                <input type="checkbox" id="customDateCheckbox" onchange="toggleCustomDate()">
+                Registrar con fecha diferente
+            </label>
+
+            <!-- ✅ NUEVO: Selector de fecha (oculto por defecto) -->
+            <div id="customDateContainer" style="display: none; margin: 15px 0;">
+                <label><strong>📅 Fecha de la venta:</strong></label>
+                <input type="date" id="customSaleDate" max="" style="width: 100%; padding: 12px; margin-top: 8px; border: 2px solid var(--border); border-radius: 8px;">
+            </div>
+            
+            <button type="submit" class="btn-success" style="width:100%;padding:15px;font-size:16px;">✅ Confirmar Pago</button>
+        </form>
+    </div>
+</div>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
